@@ -2,6 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import json
+import os
+
+
+# Create the directory if it doesn't exist
+if not os.path.exists("data"):
+    os.makedirs("data")
 
 base_url = "https://national-infrastructure-consenting.planninginspectorate.gov.uk"
 
