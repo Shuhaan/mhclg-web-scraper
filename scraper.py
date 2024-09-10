@@ -62,20 +62,7 @@ def scrape_project_csv(url, file_path="data/projects.csv"):
         print(f"Error occurred while processing {url}: {e}")
         return None
 
-
-if __name__ == "__main__":
-    # Scrape the project page to get csv file containing projects
-    projects_url = f"{base_url}/project-search"
-
-    print(f"Scraping: {projects_url}")
-    scrape_project_csv(projects_url)
-
-    # Path to your CSV file
-    csv_file_path = "data/projects.csv"
-
-    # Load the CSV file into a DataFrame
-    df = pd.read_csv(csv_file_path)
-
+def get_project_pdf_links(df):
     json_data = {}
 
     for index, row in df.iterrows():
@@ -109,3 +96,20 @@ if __name__ == "__main__":
         json.dump(json_data, file, ensure_ascii=False, indent=4)
 
     print(f"Data has been written to {file_path}")
+
+
+if __name__ == "__main__":
+    # Scrape the project page to get csv file containing projects
+    projects_url = f"{base_url}/project-search"
+
+    print(f"Scraping: {projects_url}")
+    scrape_project_csv(projects_url)
+
+    # Path to your CSV file
+    csv_file_path = "data/projects.csv"
+
+    # Load the CSV file into a DataFrame
+    df = pd.read_csv(csv_file_path)
+
+    get_project_pdf_links(df)
+    
