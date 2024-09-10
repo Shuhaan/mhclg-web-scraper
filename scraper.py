@@ -76,4 +76,36 @@ if __name__ == "__main__":
     # Load the CSV file into a DataFrame
     df = pd.read_csv(csv_file_path)
 
+    json_data = {}
 
+    for index, row in df.iterrows():
+        project_reference = row["Project reference"]
+        project_name = row["Project name"]
+        project_url = f"{base_url}/projects/{project_reference}/documents?searchTerm=book+of+reference"
+
+        try:
+            # Step 1: Fetch the HTML content of the page
+            response = requests.get(project_url)
+
+            # Check if the request was successful
+            if response.status_code == 200:
+                # Step 2: Parse the page content using BeautifulSoup
+                soup = BeautifulSoup(response.text, "html.parser")
+
+                pdf_link = soup.find(
+                    "a",
+                    href=lambda href: href and "Book of Reference" in href,
+                )
+
+                if pdf_link:
+                    file_url = pdf_link.get("href").replace(" ", "%20")
+                    json_data[project_name] = file_url
+
+        except Exception as e:
+            print(f"Error occurred while processing {project_url}: {e}")
+
+    file_path = f"data/projects.json"
+    with open(file_path, "w") as file:
+        json.dump(json_data, file, ensure_ascii=False, indent=4)
+
+    print(f"Data has been written to {file_path}")
