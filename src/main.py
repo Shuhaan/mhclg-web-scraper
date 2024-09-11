@@ -1,4 +1,8 @@
-from scraper import scrape_project_csv, get_project_pdf_links
+from scraper import (
+    scrape_project_csv,
+    get_project_pdf_links,
+    download_book_of_references,
+)
 import pandas as pd
 import asyncio
 
@@ -16,7 +20,11 @@ def main():
     # Load the CSV file into a DataFrame
     df = pd.read_csv(csv_file_path)
 
+    # Gather the links to the Book of References for each project
     project_pdf_link_dict = asyncio.run(get_project_pdf_links(df))
+
+    # Download the Book of References for each project
+    asyncio.run(download_book_of_references(project_pdf_link_dict))
 
 
 if __name__ == "__main__":

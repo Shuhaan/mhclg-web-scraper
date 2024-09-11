@@ -132,3 +132,53 @@ async def process_project(session, project_name, project_url, json_data):
 
     except Exception as e:
         print(f"Error occurred while processing {project_url}: {e}")
+
+
+async def download_book_of_references(
+    project_pdf_link_dict, directory="data/book-of-references"
+):
+    # Create the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        for project_name, pdf_url in project_pdf_link_dict.items():
+            tasks.append(download_single_pdf(session, project_name, pdf_url, directory))
+
+        await asyncio.gather(*tasks)  # Run all download tasks concurrently
+
+
+async def download_single_pdf(session, name, link, directory="data/book-of-references"):
+    """Download a single PDF or DOCX file asynchronously."""
+    # Create the directory if it doesn't exist
+    os.makedirs(directory, exist_ok=True)
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(link) as response:
+                # Check for request errors
+                response.raise_for_status()
+
+                # Determine file extension
+                content_type = response.headers.get("Content-Type", "")
+                if "docx" in content_type or link.endswith(".docx"):
+                    extension = "docx"
+                else:
+                    # Default to pdf if type is unknown
+                    extension = "pdf"
+
+                # Normalise file name
+                file_name = name.lower().replace("/", " or ").replace(" ", "-")
+                file_path = os.path.join(directory, f"{file_name}.{extension}")
+
+                # Write the content to file
+                with open(file_path, "wb") as f:
+                    f.write(await response.read())
+
+                print(
+                    f"Successfully downloaded {name} file as {extension} in directory: {directory}"
+                )
+    except aiohttp.ClientError as e:
+        print(f"Failed to download {name} from {link}: {e}")
+    except Exception as e:
+        print(f"An error occurred with {name}: {e}")
