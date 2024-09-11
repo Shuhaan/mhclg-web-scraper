@@ -4,7 +4,7 @@
 #
 #################################################################################
 
-PROJECT_NAME = website-generator
+PROJECT_NAME = mhclg-web-scraper
 REGION = eu-west-2
 PYTHON_INTERPRETER = python
 SHELL := /bin/bash
@@ -71,27 +71,26 @@ dev-setup: bandit safety black coverage
 ## Run the security test (bandit + safety)
 security-test:
 	$(call execute_in_env, safety check -r ./requirements.txt)
-	$(call execute_in_env, bandit -lll ./*.py)
+	$(call execute_in_env, bandit -lll **/*.py)
 
 ## Run the black code check
 run-black:
 	$(call execute_in_env, black  **/*.py)
 
-# ## Run the unit tests
-# unit-test:
-# 	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest)
+## Run the unit tests
+unit-test:
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest)
 
-# ## Run the coverage check
-# check-coverage:
-# 	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest --cov=src tests/)
+## Run the coverage check
+check-coverage:
+	$(call execute_in_env, PYTHONPATH=${PYTHONPATH} pytest --cov=src tests/)
 	
-# ## Run all checks
-# run-checks: security-test run-black check-coverage
+## Run all checks
+run-checks: security-test run-black check-coverage
 
 ## Clean up environment
 clean:
-	rm -rf venv .pytest_cache .coverage
+	rm -rf venv .pytest_cache .coverage data requirements.txt
 	find . -type f -name '*.pyc' -delete
 	find . -type d -name '__pycache__' -delete
-	find . -type f -name '*.txt' -delete
-	find . -type f -name '*.zip' -delete
+	
