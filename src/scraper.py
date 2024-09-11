@@ -1,4 +1,5 @@
 import requests
+import pdfplumber
 import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
@@ -6,15 +7,16 @@ import json
 import os
 
 
-# Create the directory if it doesn't exist
-if not os.path.exists("data"):
-    os.makedirs("data")
-
 base_url = "https://national-infrastructure-consenting.planninginspectorate.gov.uk"
 
 
-def scrape_project_csv(url, file_path="data/projects.csv"):
+def scrape_project_csv(url, directory="data"):
     """Scrape project CSV file from the given URL."""
+
+    # Create the directory if it doesn't exist
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     try:
         # Fetch the HTML content of the page
         response = requests.get(url)
@@ -41,9 +43,11 @@ def scrape_project_csv(url, file_path="data/projects.csv"):
 
                 # Save the file locally
                 if file_response.status_code == 200:
-                    with open(file_path, "wb") as file:
+                    with open(f"{directory}/projects.csv", "wb") as file:
                         file.write(file_response.content)
-                    print(f"File downloaded successfully and saved as {file_path}")
+                    print(
+                        f"CSV file downloaded successfully and saved in directory: {directory}"
+                    )
                 else:
                     print(
                         f"Failed to download the file. Status code: {file_response.status_code}"
@@ -70,9 +74,14 @@ async def fetch_page(session, url):
         return None
 
 
-async def get_project_pdf_links(df, file_path="data/projects.json"):
+async def get_project_pdf_links(df, directory="data"):
     """Extract PDF links from the project pages and save to JSON asynchronously."""
-    json_data = {}
+
+    # Create the directory if it doesn't exist
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    project_pdf_link_dict = {}
 
     async with aiohttp.ClientSession() as session:
         tasks = []
@@ -81,15 +90,17 @@ async def get_project_pdf_links(df, file_path="data/projects.json"):
             project_name = row["Project name"]
             project_url = f"{base_url}/projects/{project_reference}/documents?searchTerm=book+of+reference"
 
-            tasks.append(process_project(session, project_name, project_url, json_data))
+            tasks.append(
+                process_project(
+                    session, project_name, project_url, project_pdf_link_dict
+                )
+            )
 
         # Run all tasks concurrently
         await asyncio.gather(*tasks)
 
-    # Save the extracted PDF links to a JSON file
-    with open(file_path, "w", encoding="utf-8") as file:
-        json.dump(json_data, file, ensure_ascii=False, indent=4)
-        print(f"Data has been written to {file_path}")
+    # Return dictionary containing the project names and their respective "Book of Reference" link
+    return project_pdf_link_dict
 
 
 async def process_project(session, project_name, project_url, json_data):

@@ -16,7 +16,7 @@ def main():
     # Load the CSV file into a DataFrame
     df = pd.read_csv(csv_file_path)
 
-    asyncio.run(get_project_pdf_links(df))
+    project_pdf_link_dict = asyncio.run(get_project_pdf_links(df))
 
 
 if __name__ == "__main__":
