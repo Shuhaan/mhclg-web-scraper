@@ -1,5 +1,6 @@
 from scraper import scrape_project_csv, get_project_pdf_links
 import pandas as pd
+import asyncio
 
 
 def main():
@@ -15,7 +16,7 @@ def main():
     # Load the CSV file into a DataFrame
     df = pd.read_csv(csv_file_path)
 
-    get_project_pdf_links(df)
+    asyncio.run(get_project_pdf_links(df))
 
 
 if __name__ == "__main__":
