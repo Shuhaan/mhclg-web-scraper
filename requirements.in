@@ -3,3 +3,6 @@ bs4
 pandas
 pdfplumber
 aiohttp
+pytest
+pytest-testdox
+pytest-cov
