@@ -1,16 +1,14 @@
 import requests
-import pdfplumber
 import asyncio
 import aiohttp
 from bs4 import BeautifulSoup
-import json
 import os
 
 
 base_url = "https://national-infrastructure-consenting.planninginspectorate.gov.uk"
 
 
-def scrape_project_csv(url, directory="data"):
+def scrape_download_file(base_url, file_name, endpoint="", directory="data"):
     """Scrape project CSV file from the given URL."""
 
     # Create the directory if it doesn't exist
@@ -18,6 +16,11 @@ def scrape_project_csv(url, directory="data"):
         os.makedirs(directory)
 
     try:
+        url = (
+            f"{base_url}/{endpoint}"
+            if endpoint and isinstance(endpoint, str)
+            else base_url
+        )
         # Fetch the HTML content of the page
         response = requests.get(url)
 
@@ -30,7 +33,7 @@ def scrape_project_csv(url, directory="data"):
             download_link = soup.find(
                 "a",
                 download=True,
-                href=lambda href: href and "/api/applications-download" in href,
+                href=lambda href: href,
             )
 
             if download_link:
@@ -43,10 +46,10 @@ def scrape_project_csv(url, directory="data"):
 
                 # Save the file locally
                 if file_response.status_code == 200:
-                    with open(f"{directory}/projects.csv", "wb") as file:
+                    with open(f"{directory}/{file_name}", "wb") as file:
                         file.write(file_response.content)
                     print(
-                        f"CSV file downloaded successfully and saved in directory: {directory}"
+                        f"{file_name} downloaded successfully and saved in directory: {directory}"
                     )
                 else:
                     print(
@@ -74,47 +77,40 @@ async def fetch_page(session, url):
         return None
 
 
-async def get_project_pdf_links(df, directory="data"):
+async def get_file_urls(base_url, name_url_dict, directory="data"):
     """Extract PDF links from the project pages and save to JSON asynchronously."""
 
     # Create the directory if it doesn't exist
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    project_pdf_link_dict = {}
+    file_url_dict = {}
 
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for index, row in df.iterrows():
-            project_reference = row["Project reference"]
-            project_name = row["Project name"]
-            project_url = f"{base_url}/projects/{project_reference}/documents?searchTerm=book+of+reference"
-
-            tasks.append(
-                process_project(
-                    session, project_name, project_url, project_pdf_link_dict
-                )
-            )
+        for name, endpoint in name_url_dict.items():
+            url = f"{base_url}/{endpoint}"
+            tasks.append(process_file_page(session, name, url, file_url_dict))
 
         # Run all tasks concurrently
         await asyncio.gather(*tasks)
 
     # Return dictionary containing the project names and their respective "Book of Reference" link
-    return project_pdf_link_dict
+    return file_url_dict
 
 
-async def process_project(session, project_name, project_url, json_data):
-    """Process each project page to extract the PDF link."""
+async def process_file_page(session, name, url, file_url_dict):
+    """Process each file page to extract the file link."""
     try:
         # Fetch the page content
-        html_content = await fetch_page(session, project_url)
+        html_content = await fetch_page(session, url)
 
         if html_content:
             # Parse the page content using BeautifulSoup
             soup = BeautifulSoup(html_content, "html.parser")
 
-            # Attempt to find the PDF link with both conditions
-            pdf_link = soup.find(
+            # Attempt to find the file link with both conditions
+            url_tag = soup.find(
                 "a",
                 href=lambda href: href
                 and "Book of Reference" in href
@@ -122,34 +118,32 @@ async def process_project(session, project_name, project_url, json_data):
             ) or soup.find("a", href=lambda href: href and "Book of Reference" in href)
 
             # Process the found link if any
-            if pdf_link:
+            if url_tag:
                 # Normalise the URL by replacing spaces with "%20"
-                file_url = pdf_link.get("href").replace(" ", "%20")
-                json_data[project_name] = file_url
-                print(f"PDF link found for {project_name}")
+                file_url = url_tag.get("href").replace(" ", "%20")
+                file_url_dict[name] = file_url
+                print(f"File found for {name}")
             else:
-                print(f"No PDF link found for {project_name}")
+                print(f"No file found for {name}")
 
     except Exception as e:
-        print(f"Error occurred while processing {project_url}: {e}")
+        print(f"Error occurred while processing {url}: {e}")
 
 
-async def download_book_of_references(
-    project_pdf_link_dict, directory="data/book-of-references"
-):
+async def download_files(name_url_dict, directory="data/book-of-references"):
     # Create the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for project_name, pdf_url in project_pdf_link_dict.items():
-            tasks.append(download_single_pdf(session, project_name, pdf_url, directory))
+        for name, url in name_url_dict.items():
+            tasks.append(download_file(session, name, url, directory))
 
         await asyncio.gather(*tasks)  # Run all download tasks concurrently
 
 
-async def download_single_pdf(session, name, link, directory="data/book-of-references"):
-    """Download a single PDF or DOCX file asynchronously."""
+async def download_file(session, name, link, directory="data/book-of-references"):
+    """Download a single file asynchronously."""
     # Create the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 

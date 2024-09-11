@@ -1,19 +1,21 @@
 from scraper import (
-    scrape_project_csv,
-    get_project_pdf_links,
-    download_book_of_references,
+    scrape_download_file,
+    get_file_urls,
+    download_files,
 )
 import pandas as pd
 import asyncio
 import os
 
 
+base_url = "https://national-infrastructure-consenting.planninginspectorate.gov.uk"
+file_endpoint = "project-search"
+
+
 def main():
     # Scrape the project page to get the CSV file containing projects
-    projects_url = "https://national-infrastructure-consenting.planninginspectorate.gov.uk/project-search"
-
-    print(f"Scraping: {projects_url}")
-    scrape_project_csv(projects_url)
+    print(f"Scraping: {base_url}/{file_endpoint}")
+    scrape_download_file(base_url, "projects.csv", endpoint=file_endpoint)
 
     # Path to your CSV file
     csv_file_path = "data/projects.csv"
@@ -21,11 +23,20 @@ def main():
     # Load the CSV file into a DataFrame
     df = pd.read_csv(csv_file_path)
 
+    name_endpoint_dict = {}
+    for index, row in df.iterrows():
+        project_reference = row["Project reference"]
+        project_name = row["Project name"]
+        project_endpoint = (
+            f"projects/{project_reference}/documents?searchTerm=book+of+reference"
+        )
+        name_endpoint_dict[project_name] = project_endpoint
+
     # Gather the links to the Book of References for each project
-    project_pdf_link_dict = asyncio.run(get_project_pdf_links(df))
+    project_pdf_link_dict = asyncio.run(get_file_urls(base_url, name_endpoint_dict))
 
     # Download the Book of References for each project
-    asyncio.run(download_book_of_references(project_pdf_link_dict))
+    asyncio.run(download_files(project_pdf_link_dict))
     num_of_files = len(os.listdir("data/book-of-references"))
     print(f"Number of files downloaded: {num_of_files}")
 

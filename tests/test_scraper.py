@@ -4,8 +4,8 @@ import aiohttp
 import pandas as pd
 from unittest.mock import patch, AsyncMock
 from scraper import (
-    get_project_pdf_links,
-    process_project,
+    get_file_urls,
+    process_file_page,
     fetch_page,
 )  # Replace with your actual module name
 
@@ -38,7 +38,7 @@ async def test_fetch_page():
 
 
 @pytest.mark.skip
-async def test_process_project():
+async def test_process_file_page():
     project_name = "Project Name 1"
     project_url = "https://example.com/project1/documents"
     json_data = {}
@@ -48,7 +48,7 @@ async def test_process_project():
     async with aiohttp.ClientSession() as session:
         # Mock fetch_page to return a predefined HTML page content
         with patch("scraper.fetch_page", return_value=html_content):
-            await process_project(session, project_name, project_url, json_data)
+            await process_file_page(session, project_name, project_url, json_data)
 
     # Check if the correct link is added to the json_data
     assert project_name in json_data
@@ -56,7 +56,7 @@ async def test_process_project():
 
 
 @pytest.mark.skip
-async def test_get_project_pdf_links(tmpdir):
+async def test_get_file_urls(tmpdir):
     """Test the full async process of getting PDF links."""
     json_file_path = tmpdir.join("projects.json")
 
@@ -72,7 +72,7 @@ async def test_get_project_pdf_links(tmpdir):
 
     with patch("aiohttp.ClientSession.get", return_value=mock_get):
         # Run the asynchronous function
-        await get_project_pdf_links(mock_df, file_path=json_file_path)
+        await get_file_urls(mock_df, file_path=json_file_path)
 
     # Check if the file was created and contains the correct data
     with open(json_file_path, "r", encoding="utf-8") as f:
