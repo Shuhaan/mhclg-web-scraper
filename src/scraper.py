@@ -115,7 +115,7 @@ async def process_project(session, project_name, project_url, json_data):
                 # Normalise the URL by replacing spaces with "%20"
                 file_url = pdf_link.get("href").replace(" ", "%20")
                 json_data[project_name] = file_url
-                print(f"PDF link found for {project_name}")                
+                print(f"PDF link found for {project_name}")
             else:
                 print(f"No PDF link found for {project_name}")
 

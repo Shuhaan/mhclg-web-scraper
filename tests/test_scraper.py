@@ -3,13 +3,20 @@ import asyncio
 import aiohttp
 import pandas as pd
 from unittest.mock import patch, AsyncMock
-from scraper import get_project_pdf_links, process_project, fetch_page  # Replace with your actual module name
+from scraper import (
+    get_project_pdf_links,
+    process_project,
+    fetch_page,
+)  # Replace with your actual module name
 
 # Mock data for the test
-mock_df = pd.DataFrame({
-    "Project reference": ["project1", "project2"],
-    "Project name": ["Project Name 1", "Project Name 2"]
-})
+mock_df = pd.DataFrame(
+    {
+        "Project reference": ["project1", "project2"],
+        "Project name": ["Project Name 1", "Project Name 2"],
+    }
+)
+
 
 @pytest.mark.asyncio
 async def test_fetch_page():
@@ -21,11 +28,14 @@ async def test_fetch_page():
         mock_get = AsyncMock()
         mock_get.__aenter__.return_value.status = 200
         mock_get.__aenter__.return_value.text.return_value = html_content
-        mock_get.__aenter__.return_value.raise_for_status = AsyncMock()  # Fix for raise_for_status warning
+        mock_get.__aenter__.return_value.raise_for_status = (
+            AsyncMock()
+        )  # Fix for raise_for_status warning
 
         with patch("aiohttp.ClientSession.get", return_value=mock_get):
             response = await fetch_page(session, url)
             assert response == html_content
+
 
 @pytest.mark.skip
 async def test_process_project():
@@ -44,18 +54,21 @@ async def test_process_project():
     assert project_name in json_data
     assert json_data[project_name] == "/book_of_reference_clean.pdf".replace(" ", "%20")
 
+
 @pytest.mark.skip
 async def test_get_project_pdf_links(tmpdir):
     """Test the full async process of getting PDF links."""
     json_file_path = tmpdir.join("projects.json")
-    
+
     html_content = "<html><a href='/book_of_reference_clean.pdf'>Book of Reference Clean</a></html>"
 
     # Mock aiohttp.ClientSession.get to return the HTML with a valid PDF link
     mock_get = AsyncMock()
     mock_get.__aenter__.return_value.status = 200
     mock_get.__aenter__.return_value.text.return_value = html_content
-    mock_get.__aenter__.return_value.raise_for_status = AsyncMock()  # Fix for raise_for_status warning
+    mock_get.__aenter__.return_value.raise_for_status = (
+        AsyncMock()
+    )  # Fix for raise_for_status warning
 
     with patch("aiohttp.ClientSession.get", return_value=mock_get):
         # Run the asynchronous function
