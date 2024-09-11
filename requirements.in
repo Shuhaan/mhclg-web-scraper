@@ -6,3 +6,4 @@ aiohttp
 pytest
 pytest-testdox
 pytest-cov
+pytest-asyncio
