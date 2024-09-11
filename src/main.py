@@ -5,6 +5,7 @@ from scraper import (
 )
 import pandas as pd
 import asyncio
+import os
 
 
 def main():
@@ -25,6 +26,8 @@ def main():
 
     # Download the Book of References for each project
     asyncio.run(download_book_of_references(project_pdf_link_dict))
+    num_of_files = len(os.listdir("data/book-of-references"))
+    print(f"Number of files downloaded: {num_of_files}")
 
 
 if __name__ == "__main__":
