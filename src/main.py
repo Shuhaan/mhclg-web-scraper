@@ -1,12 +1,12 @@
+import pandas as pd
+import asyncio
+import os
 from scraper import (
     scrape_download_file,
     get_file_urls,
     download_files,
 )
-import pandas as pd
-import asyncio
-import os
-
+from scanner import count_postcodes, process_pdf, find_category_pages
 
 base_url = "https://national-infrastructure-consenting.planninginspectorate.gov.uk"
 file_endpoint = "project-search"
@@ -19,18 +19,16 @@ def main():
 
     # Path to your CSV file
     csv_file_path = "data/projects.csv"
-
     # Load the CSV file into a DataFrame
     df = pd.read_csv(csv_file_path)
 
     name_endpoint_dict = {}
     for index, row in df.iterrows():
         project_reference = row["Project reference"]
-        project_name = row["Project name"]
         project_endpoint = (
             f"projects/{project_reference}/documents?searchTerm=book+of+reference"
         )
-        name_endpoint_dict[project_name] = project_endpoint
+        name_endpoint_dict[project_reference] = project_endpoint
 
     # Gather the links to the Book of References for each project
     project_pdf_link_dict = asyncio.run(get_file_urls(base_url, name_endpoint_dict))

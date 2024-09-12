@@ -29,16 +29,16 @@ def scrape_download_file(base_url, file_name, endpoint="", directory="data"):
             # Parse the page content using BeautifulSoup
             soup = BeautifulSoup(response.text, "html.parser")
 
-            # Find the <a> tag with the download link
-            download_link = soup.find(
+            # Find the <a> tag with the download url
+            download_url = soup.find(
                 "a",
                 download=True,
                 href=lambda href: href,
             )
 
-            if download_link:
+            if download_url:
                 # Extract the href value (relative URL)
-                file_url = download_link.get("href")
+                file_url = download_url.get("href")
                 # Construct the full URL
                 full_file_url = base_url + file_url
                 # Download the file
@@ -56,7 +56,7 @@ def scrape_download_file(base_url, file_name, endpoint="", directory="data"):
                         f"Failed to download the file. Status code: {file_response.status_code}"
                     )
             else:
-                print("Download link not found.")
+                print("Download url not found.")
         else:
             print(
                 f"Failed to retrieve the webpage. Status code: {response.status_code}"
@@ -77,8 +77,8 @@ async def fetch_page(session, url):
         return None
 
 
-async def get_file_urls(base_url, name_url_dict, directory="data"):
-    """Extract PDF links from the project pages and save to JSON asynchronously."""
+async def get_file_urls(base_url, name_endpoint_dict, directory="data"):
+    """Extract PDF urls from the project pages and save to JSON asynchronously."""
 
     # Create the directory if it doesn't exist
     if not os.path.exists(directory):
@@ -88,19 +88,19 @@ async def get_file_urls(base_url, name_url_dict, directory="data"):
 
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for name, endpoint in name_url_dict.items():
+        for name, endpoint in name_endpoint_dict.items():
             url = f"{base_url}/{endpoint}"
             tasks.append(process_file_page(session, name, url, file_url_dict))
 
         # Run all tasks concurrently
         await asyncio.gather(*tasks)
 
-    # Return dictionary containing the project names and their respective "Book of Reference" link
+    # Return dictionary containing the project names and their respective "Book of Reference" url
     return file_url_dict
 
 
 async def process_file_page(session, name, url, file_url_dict):
-    """Process each file page to extract the file link."""
+    """Process each file page to extract the file url."""
     try:
         # Fetch the page content
         html_content = await fetch_page(session, url)
@@ -109,7 +109,7 @@ async def process_file_page(session, name, url, file_url_dict):
             # Parse the page content using BeautifulSoup
             soup = BeautifulSoup(html_content, "html.parser")
 
-            # Attempt to find the file link with both conditions
+            # Attempt to find the file url with both conditions
             url_tag = soup.find(
                 "a",
                 href=lambda href: href
@@ -117,7 +117,7 @@ async def process_file_page(session, name, url, file_url_dict):
                 and "Clean" in href,
             ) or soup.find("a", href=lambda href: href and "Book of Reference" in href)
 
-            # Process the found link if any
+            # Process the found url if any
             if url_tag:
                 # Normalise the URL by replacing spaces with "%20"
                 file_url = url_tag.get("href").replace(" ", "%20")
@@ -142,28 +142,27 @@ async def download_files(name_url_dict, directory="data/book-of-references"):
         await asyncio.gather(*tasks)  # Run all download tasks concurrently
 
 
-async def download_file(session, name, link, directory="data/book-of-references"):
+async def download_file(session, name, url, directory="data/book-of-references"):
     """Download a single file asynchronously."""
     # Create the directory if it doesn't exist
     os.makedirs(directory, exist_ok=True)
 
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(link) as response:
+            async with session.get(url) as response:
                 # Check for request errors
                 response.raise_for_status()
 
                 # Determine file extension
                 content_type = response.headers.get("Content-Type", "")
-                if "docx" in content_type or link.endswith(".docx"):
+                if "docx" in content_type or url.endswith(".docx"):
                     extension = "docx"
                 else:
                     # Default to pdf if type is unknown
                     extension = "pdf"
 
                 # Normalise file name
-                file_name = name.lower().replace("/", " or ").replace(" ", "-")
-                file_path = os.path.join(directory, f"{file_name}.{extension}")
+                file_path = os.path.join(directory, f"{name}.{extension}")
 
                 # Write the content to file
                 with open(file_path, "wb") as f:
@@ -173,6 +172,6 @@ async def download_file(session, name, link, directory="data/book-of-references"
                     f"Successfully downloaded {name} file as {extension} in directory: {directory}"
                 )
     except aiohttp.ClientError as e:
-        print(f"Failed to download {name} from {link}: {e}")
+        print(f"Failed to download {name} from {url}: {e}")
     except Exception as e:
         print(f"An error occurred with {name}: {e}")
