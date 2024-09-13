@@ -1,6 +1,7 @@
 requests
 bs4
 pandas
+numpy
 PyMuPDF
 aiohttp
 pytest

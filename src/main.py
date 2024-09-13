@@ -6,7 +6,7 @@ from scraper import (
     get_file_urls,
     download_files,
 )
-from scanner import count_postcodes, process_pdf, find_category_pages
+# from scanner import count_unique_postcodes, process_pdf, find_category_pages
 
 base_url = "https://national-infrastructure-consenting.planninginspectorate.gov.uk"
 file_endpoint = "project-search"
@@ -21,6 +21,42 @@ def main():
     csv_file_path = "data/projects.csv"
     # Load the CSV file into a DataFrame
     df = pd.read_csv(csv_file_path)
+
+    # Split the 'Application type' column into two new columns
+    df[["Application type code", "Application subsector"]] = df[
+        "Application type"
+    ].str.split(" - ", expand=True)
+
+    # Drop the original column if no longer needed
+    df.drop(columns=["Application type"], inplace=True)
+
+    # Dictionary mapping codes to sectors
+    sector_mapping = {
+        "BC04": "Storage and Distribution",
+        "BC08": "Leisure",
+        "EN01": "Energy",
+        "EN02": "Energy",
+        "EN03": "Energy",
+        "EN04": "Energy",
+        "EN06": "Energy",
+        "EN07": "Energy",
+        "TR01": "Transport",
+        "TR02": "Transport",
+        "TR03": "Transport",
+        "TR04": "Transport",
+        "TR05": "Transport",
+        "WS01": "Waste",
+        "WW01": "Waste Water",
+        "WA01": "Water",
+        "WA02": "Water",
+    }
+
+    # Map subsectors to seectors using reference code
+    df["Sector"] = df["Application type code"].map(sector_mapping)
+
+    # Save the DataFrame as a CSV file
+    df.to_csv("data/modified_projects.csv", index=False)
+    print(f"data/projects.csv modified and saved as: data/modified_projects.csv")
 
     name_endpoint_dict = {}
     for index, row in df.iterrows():
