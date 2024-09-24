@@ -110,14 +110,23 @@ async def process_file_page(session, name, url, file_url_dict):
             soup = BeautifulSoup(html_content, "html.parser")
 
             # Attempt to find the file url with certain conditions
-            url_tag = soup.find(
-                "a",
-                href=lambda href: href and "Book of Reference" in href and "Part 2" in href and "Clean" in href
-            ) or soup.find(
-                "a",
-                href=lambda href: href and "Book of Reference" in href and "Clean" in href
-            ) or soup.find(
-                "a", href=lambda href: href and "Book of Reference" in href
+            url_tag = (
+                soup.find(
+                    "a",
+                    href=lambda href: href
+                    and "Book of Reference" in href
+                    and "Part 2" in href
+                    and "Clean" in href,
+                )
+                or soup.find(
+                    "a",
+                    href=lambda href: href
+                    and "Book of Reference" in href
+                    and "Clean" in href,
+                )
+                or soup.find(
+                    "a", href=lambda href: href and "Book of Reference" in href
+                )
             )
 
             # Process the found url if any
