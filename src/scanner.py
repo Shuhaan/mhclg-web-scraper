@@ -5,6 +5,7 @@ import re
 import json
 import pandas as pd
 import numpy as np
+from scipy import stats
 
 
 def count_unique_postcodes(text):
@@ -143,6 +144,50 @@ async def main():
     # Save the DataFrame as a CSV file
     df.to_csv("data/final_projects.csv", index=False)
     print(f"DataFrame saved as: data/final_projects.csv")
+
+    # Group by 'Application subsector' and count the number of applications
+    grouped_projects = df[df['Document Status'] == 'Processed'].groupby('Application subsector').size().reset_index(name='Project count')
+
+    # Initialize lists to store statistics for Category 3 claimants
+    means = []
+    variances = []
+    ci_lower_bounds = []
+    ci_upper_bounds = []
+
+    # Calculate statistics for 'Category 3 claimants' for each subsector
+    for subsector in grouped_projects['Application subsector']:
+        subsector_data = df[(df['Application subsector'] == subsector) & (df['Document Status'] == 'Processed')]['Category 3 claimants']
+        
+        # Calculate mean and variance
+        mean_claimants = subsector_data.mean()
+        variance_claimants = subsector_data.var()
+
+        # Confidence interval calculation
+        confidence_level = 0.95
+        n = len(subsector_data) - 1
+        if n > 0:
+            std_err = stats.sem(subsector_data)
+            ci = stats.t.interval(confidence_level, n, loc=mean_claimants, scale=std_err)
+        else:
+            ci = (None, None)  # Handle cases where data is insufficient for CI
+        
+        # Append statistics to lists
+        means.append(mean_claimants)
+        variances.append(variance_claimants)
+        ci_lower_bounds.append(ci[0])
+        ci_upper_bounds.append(ci[1])
+
+    # Add the calculated statistics to the grouped DataFrame
+    grouped_projects['Mean'] = means
+    grouped_projects['Variance'] = variances
+    grouped_projects['CI lower bound'] = ci_lower_bounds
+    grouped_projects['CI upper bound'] = ci_upper_bounds
+
+    # Save the final DataFrame to CSV
+    csv_file_path = 'data/subsector_statistics_with_claimants.csv'
+    grouped_projects.to_csv(csv_file_path, index=False)
+
+    print(f"CSV file created at: {csv_file_path}")
 
 
 # Run the main function
